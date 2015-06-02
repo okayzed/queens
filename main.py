@@ -1,10 +1,21 @@
 
 import sys
 SIZE=9
+SEED=0
 if len(sys.argv) > 1:
   SIZE = int(sys.argv[1])
 
+else:
+  print "USAGE: python", sys.argv[0], "<N> [<SEED>]"
+  sys.exit(0)
+
+if len(sys.argv) > 2:
+  SEED = sys.argv[2]
+
 def main():
+  import arrange
+  arrange.SEED = SEED
+
   from arrange import Board 
   b = Board(SIZE)
   b.solve()

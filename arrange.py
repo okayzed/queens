@@ -1,9 +1,15 @@
 import random
 from collections import defaultdict
 
-DO_DETECT = False
+DO_DETECT=False # check the board  before and after every placement
+DEBUG=False # print debugging statements, dont turn on unless you pipe to file
 
-DEBUG=False
+
+SHUFFLE=True
+SEED=0
+
+# TURN THIS TO TRUE TO FIND ONLY CO-LINEAR BOARD PLACEMENTS
+DETECT_COLINEAR=False
 
 def debug(*args):
     if DEBUG:
@@ -19,12 +25,22 @@ class Board(object):
         self.__used_diags = {}
         self.__used_slashes = {}
 
+
+        self.__rows = range(size)
+        self.__cols = range(size)
+
+        if SHUFFLE:
+            random.seed(SEED)
+            random.shuffle(self.__rows)
+            random.shuffle(self.__cols)
+
+
         for i in xrange(self.__size):
             self.__available_rows[i] = True
             self.__available_columns[i] = True
 
 
-        for i in xrange(-i * 2, i * 2):
+        for i in xrange(-i * 3, i * 3):
             self.__used_diags[i] = False
             self.__used_slashes[i] = False
 
@@ -43,12 +59,37 @@ class Board(object):
                 return False
 
 
+        slopes = defaultdict(int)
+
+        if DETECT_COLINEAR:
+            for placed in self.__placed:
+                slope = float(piece[0] - placed[0]) / float(piece[1] - placed[1])
+                slopes[slope] += 1
+
+            for slope in slopes:
+                if slopes[slope] > 1:
+
+                    if len(self.__placed) == self.__size - 1 and DEBUG:
+                        board = self.get_board()
+                        board[x][y] = '?'
+
+                        candidates = list(self.get_candidates())
+                        for c in candidates:
+                            board[c[0]][c[1]] = 'c'
+
+                        print '\n'.join(["".join(x) for x in board])
+                        print "ADDING PIECE", piece
+                        print "MULTIPLE SLOPES, INVALID POSITION"
+
+                    return False
+                
         self.__placed.append((x, y))
 
         if DO_DETECT:
             if not self.check_board():
                 self.__placed.pop()
                 return False
+
 
         self.__available_rows[x] = False
         self.__available_columns[y] = False
@@ -75,13 +116,14 @@ class Board(object):
 
 
     def get_candidates(self):
-        for j in self.__available_columns:
+        for j in self.__cols:
             if not self.__available_columns[j]:
                 continue
 
-            for i in self.__available_rows:
+            for i in self.__rows:
                 if not self.__available_rows[i]:
                     continue
+
                 d1 = i - j
                 d2 = i + j
                 if self.__used_diags[d1]:
@@ -106,7 +148,6 @@ class Board(object):
 
 
         
-
     def check_board(self):
         # Look at all the placements and make sure they are valid
         for i, pos in enumerate(self.__placed):
@@ -150,12 +191,17 @@ class Board(object):
 
         return True
 
-    def print_board(self):
+    def get_board(self):
         board = []
         for i in xrange(self.__size):
             board.append(["-"] * self.__size)
 
-        for piece in self.__placed:
-            board[piece[0]][piece[1]] = 'Q'
+        for i, piece in enumerate(self.__placed):
+            board[piece[0]][piece[1]] = str(i)
 
+        return board
+
+
+    def print_board(self):
+        board = self.get_board()
         print '\n'.join(["".join(x) for x in board])
