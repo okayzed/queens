@@ -11,19 +11,35 @@ SEED=0
 # TURN THIS TO TRUE TO FIND ONLY CO-LINEAR BOARD PLACEMENTS
 DETECT_COLINEAR=False
 
+MAX_ITERATIONS=100000
+MAX_TRIES=100
+
 def debug(*args):
     if DEBUG:
         print " ".join(args)
 
+class MaxDepthError(Exception):
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+    
 class Board(object):
     def __init__(self, size=8):
         self.__size = size
+        self.__reset__()
+
+
+
+    def __reset__(self):
+        size = self.__size
         self.__placed = []
         self.__board = []
         self.__available_rows = {}
         self.__available_columns = {}
         self.__used_diags = {}
         self.__used_slashes = {}
+
+        self.__iterations = 0
+        self.__close_calls = 0
 
 
         self.__rows = range(size)
@@ -69,17 +85,20 @@ class Board(object):
             for slope in slopes:
                 if slopes[slope] > 1:
 
-                    if len(self.__placed) == self.__size - 1 and DEBUG:
-                        board = self.get_board()
-                        board[x][y] = '?'
+                    if len(self.__placed) == self.__size - 2:
+                        self.__close_calls += 1
 
-                        candidates = list(self.get_candidates())
-                        for c in candidates:
-                            board[c[0]][c[1]] = 'c'
+                        if DEBUG:
+                            board = self.get_board()
+                            board[x][y] = '?'
 
-                        print '\n'.join(["".join(x) for x in board])
-                        print "ADDING PIECE", piece
-                        print "MULTIPLE SLOPES, INVALID POSITION"
+                            candidates = list(self.get_candidates())
+                            for c in candidates:
+                                board[c[0]][c[1]] = 'c'
+
+                            print '\n'.join(["".join(x) for x in board])
+                            print "ADDING PIECE", piece
+                            print "MULTIPLE SLOPES, INVALID POSITION"
 
                     return False
                 
@@ -164,8 +183,21 @@ class Board(object):
     def placed(self):
         return self.__placed
 
-    def solve(self, size=None):
-        # print "SOLVING FOR SIZE", size
+    def solve(self):
+        for i in xrange(MAX_TRIES):
+            try:
+                self._solve()
+            except MaxDepthError, e:
+                global SEED, SHUFFLE
+                SHUFFLE=True
+                SEED = random.random()
+                self.__reset__()
+                print "MAX ITERATIONS EXCEEDED", i
+            except Exception, e:
+                print 'EXCEPTION', e
+                break
+
+    def _solve(self, size=None):
         if size is None:
             size = self.__size
 
@@ -174,13 +206,18 @@ class Board(object):
 
         candidates = self.get_candidates()
 
+        self.__iterations += 1
+
+        if self.__iterations >= MAX_ITERATIONS:
+            raise MaxDepthError()
+
         for candidate in candidates:
             if not self.add_piece(candidate):
                 continue
             
             debug("CHECKING CANDIDATE", candidate)
 
-            if self.solve(size-1):
+            if self._solve(size-1):
                 return True
 
             self.remove_piece(candidate)
