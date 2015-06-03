@@ -16,11 +16,12 @@ def main():
   import arrange
   arrange.SEED = SEED
 
-  from arrange import Board 
-  b = Board(SIZE)
+  from arrange import BruteForceBoard 
+  from repair import RepairingBoard 
+  b = RepairingBoard(SIZE)
   b.solve()
   print ""
-  print "PLACED ARE", b.placed()
+  print "PLACED ARE", b._placed
   print ""
   b.print_board()
   print ""

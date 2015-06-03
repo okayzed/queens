@@ -1,5 +1,6 @@
 import random
 from collections import defaultdict
+from board import Board
 
 DO_DETECT=False # check the board  before and after every placement
 DEBUG=False # print debugging statements, dont turn on unless you pipe to file
@@ -22,16 +23,18 @@ class MaxDepthError(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
     
-class Board(object):
+class BruteForceBoard(Board):
     def __init__(self, size=8):
         self.__size = size
         self.__reset__()
+
+        Board.__init__(self, size)
 
 
 
     def __reset__(self):
         size = self.__size
-        self.__placed = []
+        self._placed = []
         self.__board = []
         self.__available_rows = {}
         self.__available_columns = {}
@@ -78,14 +81,14 @@ class Board(object):
         slopes = defaultdict(int)
 
         if DETECT_COLINEAR:
-            for placed in self.__placed:
+            for placed in self._placed:
                 slope = float(piece[0] - placed[0]) / float(piece[1] - placed[1])
                 slopes[slope] += 1
 
             for slope in slopes:
                 if slopes[slope] > 1:
 
-                    if len(self.__placed) == self.__size - 2:
+                    if len(self._placed) == self.__size - 2:
                         self.__close_calls += 1
 
                         if DEBUG:
@@ -102,11 +105,11 @@ class Board(object):
 
                     return False
                 
-        self.__placed.append((x, y))
+        self._placed.append((x, y))
 
         if DO_DETECT:
             if not self.check_board():
-                self.__placed.pop()
+                self._placed.pop()
                 return False
 
 
@@ -122,7 +125,7 @@ class Board(object):
         return True
 
     def remove_piece(self, piece):
-        self.__placed.remove((piece))
+        self._placed.remove((piece))
         x, y = piece
         self.__available_rows[x] = True
         self.__available_columns[y] = True
@@ -152,36 +155,7 @@ class Board(object):
 
                 yield (i, j)
 
-    def check_pieces_in_danger(self, data_i, data_j):
-        if data_i[0] == data_j[0] or data_i[1] == data_j[1]:
-            debug("LINES MATCH", data_i, data_j)
-            return True
-
-        dia_i = (data_i[0] - data_i[1], data_i[0] + data_i[1])
-        dia_j = (data_j[0] - data_j[1], data_j[0] + data_j[1])
-
-        if dia_i[0] == dia_j[0] or dia_i[1] == dia_j[1]:
-            debug(dia_i, dia_j)
-            debug("DIAGONALS MATCH")
-            return True
-
-
         
-    def check_board(self):
-        # Look at all the placements and make sure they are valid
-        for i, pos in enumerate(self.__placed):
-            for j in xrange(i + 1, len(self.__placed)):
-                # makes sure that these pieces aren't attacking?
-
-                if self.check_pieces_in_danger(self.__placed[i], self.__placed[j]):
-                    return False
-
-    
-        return True
-
-
-    def placed(self):
-        return self.__placed
 
     def solve(self):
         for i in xrange(MAX_TRIES):
@@ -223,22 +197,7 @@ class Board(object):
             self.remove_piece(candidate)
 
         debug("RAN OUT OF CANDIDATES")
-        if len(self.__placed) != self.__size:
+        if len(self._placed) != self.__size:
             return False
 
         return True
-
-    def get_board(self):
-        board = []
-        for i in xrange(self.__size):
-            board.append(["-"] * self.__size)
-
-        for i, piece in enumerate(self.__placed):
-            board[piece[0]][piece[1]] = str(i)
-
-        return board
-
-
-    def print_board(self):
-        board = self.get_board()
-        print '\n'.join(["".join(x) for x in board])
