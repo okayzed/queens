@@ -2,7 +2,9 @@
 # for every piece on the board, evaluate how many conflicts it currently has
 # the, go through all other squares for the max conflict piece on its row (or col) and move it to the best one
 import random
+from collections import defaultdict
 from board import Board
+from config import DETECT_COLINEAR
 
 class RepairingBoard(Board):
     def __init__(self, size=8):
@@ -13,9 +15,8 @@ class RepairingBoard(Board):
         for i in xrange(size):
             self._placed.append((i, vals[i]))
 
-        
-        self.__size = size
 
+        self.__size = size
         Board.__init__(self, size)
 
 
@@ -37,7 +38,6 @@ class RepairingBoard(Board):
             repair_keys.sort(key=lambda x: repair_conflicts[x])
 
             val = repair_keys[0]
-
 
             intended = repair_conflicts[val]
             if intended > conflict_counts[piece]:
@@ -71,6 +71,9 @@ class RepairingBoard(Board):
                 if self.check_pieces_in_danger(this_piece, other_piece):
                     danger += 1
 
+            if DETECT_COLINEAR:
+                danger += self.check_colinearity(this_piece) * 2
+
             dangers[this_piece] = danger
 
         return dangers
@@ -82,7 +85,7 @@ class RepairingBoard(Board):
                 print "NO MOVEMENTS LEFT"
                 break
 
-        
+
 if __name__ == "__main__":
     import sys
     size = 11
