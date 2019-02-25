@@ -8,12 +8,12 @@ from config import DETECT_COLINEAR
 
 class RepairingBoard(Board):
     def __init__(self, size=8):
-        self._placed = []
+        self._placed = set()
 
         vals = range(size)
         random.shuffle(vals)
         for i in xrange(size):
-            self._placed.append((i, vals[i]))
+            self._placed.add((i, vals[i]))
 
 
         self.__size = size
@@ -42,13 +42,13 @@ class RepairingBoard(Board):
 
             intended = repair_conflicts[val]
             if intended > conflict_counts[piece]:
-                self._placed.append(piece)
+                self._placed.add(piece)
                 continue
 
             print "MOVING", piece, "TO", val
             made_movement = True
 
-            self._placed.append(val)
+            self._placed.add(val)
             movements.append(val)
             conflict_counts = self.get_conflict_counts()
 
@@ -82,13 +82,20 @@ class RepairingBoard(Board):
 
     def solve(self):
         def break_cluster():
-            # now we go for a cluster buster and knock several queens into the 
+            # now we go for a cluster buster and knock several queens into the
             # same row, because we think we hit a somewhat local minima
             cluster = []
+            i = 0
+            placed = list(self._placed)
             for _ in xrange(5):
                 i = random.randint(0, self.__size-1)
-                cluster.append(self._placed[i])
-                self._placed[i] = (self._placed[i][0], 0)
+                piece = placed[i]
+                if piece in self._placed:
+                    cluster.append(piece)
+                    self._placed.remove(piece)
+                    np = (piece[0], 0)
+                    self._placed.add(np)
+
 
             print "BREAKING CLUSTER", cluster
             movements = [0] * self.__size

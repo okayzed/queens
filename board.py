@@ -7,18 +7,19 @@ class Board(object):
 
     def check_board(self):
         # Look at all the placements and make sure they are valid
-        for i, pos in enumerate(self._placed):
-            for j in xrange(i + 1, len(self._placed)):
+        placed = list(self._placed)
+        for i, pos in enumerate(placed):
+            for j in xrange(i + 1, len(placed)):
                 # makes sure that these pieces aren't attacking?
 
-                if self.check_pieces_in_danger(self._placed[i], self._placed[j]):
+                if self.check_pieces_in_danger(placed[i], placed[j]):
                     return False
 
         return True
 
     def check_board_colinearity(self):
-        for i, pos in enumerate(self._placed):
-            if self.check_colinearity(self._placed[i]) > 0:
+        for piece in self._placed:
+            if self.check_colinearity(piece):
                 return False
 
         return True
@@ -63,22 +64,39 @@ class Board(object):
 
     def get_conflict_counts(self):
         dangers = {}
+
+        rows = defaultdict(int)
+        cols = defaultdict(int)
+        ldiags = defaultdict(int)
+        rdiags = defaultdict(int)
+
+        # d1 = piece[0] - piece[1]
+        # d2 = piece[0] + piece[1]
+
+        for piece in self._placed:
+            rows[piece[0]] += 1
+            cols[piece[1]] += 1
+
+            d1 = piece[0] - piece[1]
+            d2 = piece[0] + piece[1]
+            ldiags[d1] += 1
+            rdiags[d2] += 1
+
         for i, piece in enumerate(self._placed):
+            d1 = piece[0] - piece[1]
+            d2 = piece[0] + piece[1]
+
             danger = 0
-            for other_piece in self._placed:
-                if other_piece == piece:
-                    continue
-
-                if self.check_pieces_in_danger(piece, other_piece):
-                    danger += 1
-
+            danger += rows[piece[0]] - 1
+            danger += cols[piece[1]] - 1
+            danger += ldiags[d1] - 1
+            danger += rdiags[d2] - 1
 
             if DETECT_COLINEAR:
                 danger += self.check_colinearity(piece)
 
 
             dangers[piece] = danger
-
 
         return dangers
 
