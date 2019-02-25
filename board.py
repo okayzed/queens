@@ -70,9 +70,6 @@ class Board(object):
         ldiags = defaultdict(int)
         rdiags = defaultdict(int)
 
-        # d1 = piece[0] - piece[1]
-        # d2 = piece[0] + piece[1]
-
         for piece in self._placed:
             rows[piece[0]] += 1
             cols[piece[1]] += 1

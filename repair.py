@@ -9,16 +9,22 @@ from config import DETECT_COLINEAR
 class RepairingBoard(Board):
     def __init__(self, size=8):
         self._placed = set()
+        self._slopes = defaultdict(int)
+        self._conflicts = defaultdict(int)
 
         vals = range(size)
         random.shuffle(vals)
         for i in xrange(size):
-            self._placed.add((i, vals[i]))
+            self.place_piece((i, vals[i]))
 
 
         self.__size = size
         Board.__init__(self, size)
 
+    def remove_piece(self, piece):
+        self._placed.remove(piece)
+    def place_piece(self, piece):
+        self._placed.add(piece)
 
     def repair_board(self):
         conflict_counts = self.get_conflict_counts()
@@ -31,7 +37,7 @@ class RepairingBoard(Board):
                 continue
 
 
-            self._placed.remove(piece)
+            self.remove_piece(piece)
             repair_conflicts = self.get_repair_conflicts(piece)
 
             repair_keys = repair_conflicts.keys()
@@ -42,13 +48,13 @@ class RepairingBoard(Board):
 
             intended = repair_conflicts[val]
             if intended > conflict_counts[piece]:
-                self._placed.add(piece)
+                self.place_piece(piece)
                 continue
 
             print "MOVING", piece, "TO", val
             made_movement = True
 
-            self._placed.add(val)
+            self.place_piece(val)
             movements.append(val)
             conflict_counts = self.get_conflict_counts()
 
@@ -87,14 +93,16 @@ class RepairingBoard(Board):
             cluster = []
             i = 0
             placed = list(self._placed)
-            for _ in xrange(5):
+            import math
+            cluster_size = int(math.sqrt(self.__size / 2))
+            for _ in xrange(cluster_size):
                 i = random.randint(0, self.__size-1)
                 piece = placed[i]
                 if piece in self._placed:
                     cluster.append(piece)
-                    self._placed.remove(piece)
+                    self.remove_piece(piece)
                     np = (piece[0], 0)
-                    self._placed.add(np)
+                    self.place_piece(np)
 
 
             print "BREAKING CLUSTER", cluster
