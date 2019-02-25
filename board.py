@@ -1,6 +1,51 @@
 from collections import defaultdict
 from config import DETECT_COLINEAR
 
+class ConflictObject(object):
+    def __init__(self, placed):
+        self.rows = defaultdict(int)
+        self.cols = defaultdict(int)
+        self.ldiags = defaultdict(int)
+        self.rdiags = defaultdict(int)
+        for piece in placed:
+            self.rows[piece[0]] += 1
+            self.cols[piece[1]] += 1
+
+            d1 = piece[0] - piece[1]
+            d2 = piece[0] + piece[1]
+            self.ldiags[d1] += 1
+            self.rdiags[d2] += 1
+
+    def get_danger(self, piece):
+        d1 = piece[0] - piece[1]
+        d2 = piece[0] + piece[1]
+        danger = 0
+
+        danger += self.rows[piece[0]]
+        danger += self.cols[piece[1]]
+        danger += self.ldiags[d1]
+        danger += self.rdiags[d2]
+
+        return danger
+
+    def add(self, piece):
+        self.rows[piece[0]] += 1
+        self.cols[piece[1]] += 1
+
+        d1 = piece[0] - piece[1]
+        d2 = piece[0] + piece[1]
+        self.ldiags[d1] += 1
+        self.rdiags[d2] += 1
+
+    def remove(self, piece):
+        self.rows[piece[0]] -= 1
+        self.cols[piece[1]] -= 1
+
+        d1 = piece[0] - piece[1]
+        d2 = piece[0] + piece[1]
+        self.ldiags[d1] -= 1
+        self.rdiags[d2] -= 1
+
 class Board(object):
     def __init__(self, size=8):
         self.__size = size
@@ -62,38 +107,27 @@ class Board(object):
 
         return conflicts
 
+    def get_conflict_count(self, piece):
+        c = ConflictObject(self._placed)
+        danger = c.get_danger(piece) - 4
+        if DETECT_COLINEAR:
+            danger += self.check_colinearity(piece)
+        return danger
+
+    # gets pieces in conflict
     def get_conflict_counts(self):
         dangers = {}
-
-        rows = defaultdict(int)
-        cols = defaultdict(int)
-        ldiags = defaultdict(int)
-        rdiags = defaultdict(int)
-
-        for piece in self._placed:
-            rows[piece[0]] += 1
-            cols[piece[1]] += 1
-
-            d1 = piece[0] - piece[1]
-            d2 = piece[0] + piece[1]
-            ldiags[d1] += 1
-            rdiags[d2] += 1
+        c = ConflictObject(self._placed)
 
         for i, piece in enumerate(self._placed):
-            d1 = piece[0] - piece[1]
-            d2 = piece[0] + piece[1]
-
-            danger = 0
-            danger += rows[piece[0]] - 1
-            danger += cols[piece[1]] - 1
-            danger += ldiags[d1] - 1
-            danger += rdiags[d2] - 1
+            danger = c.get_danger(piece) - 4
 
             if DETECT_COLINEAR:
-                danger += self.check_colinearity(piece)
+                if danger == 0:
+                    danger += self.check_colinearity(piece)
 
-
-            dangers[piece] = danger
+            if danger:
+                dangers[piece] = danger
 
         return dangers
 

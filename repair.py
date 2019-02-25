@@ -2,15 +2,18 @@
 # for every piece on the board, evaluate how many conflicts it currently has
 # the, go through all other squares for the max conflict piece on its row (or col) and move it to the best one
 import random
+import sys
+
 from collections import defaultdict
-from board import Board
+from board import Board, ConflictObject
 from config import DETECT_COLINEAR
+SEED = 11
 
 class RepairingBoard(Board):
     def __init__(self, size=8):
+        random.seed(SEED)
+        print "SEED IS", SEED
         self._placed = set()
-        self._slopes = defaultdict(int)
-        self._conflicts = defaultdict(int)
 
         vals = range(size)
         random.shuffle(vals)
@@ -29,11 +32,11 @@ class RepairingBoard(Board):
     def repair_board(self):
         conflict_counts = self.get_conflict_counts()
         keys = conflict_counts.keys()
-        made_movement = False
 
         movements = []
         for piece in keys:
-            if conflict_counts[piece] == 0:
+            conflicts = self.get_conflict_count(piece)
+            if conflicts == 0:
                 continue
 
 
@@ -47,16 +50,14 @@ class RepairingBoard(Board):
             val = repair_keys[0]
 
             intended = repair_conflicts[val]
-            if intended > conflict_counts[piece]:
+            if intended > conflicts:
                 self.place_piece(piece)
                 continue
 
             print "MOVING", piece, "TO", val
-            made_movement = True
 
             self.place_piece(val)
             movements.append(val)
-            conflict_counts = self.get_conflict_counts()
 
         return movements
 
@@ -65,8 +66,12 @@ class RepairingBoard(Board):
     def get_repair_conflicts(self, max_piece):
 
         dangers = {}
+        c = ConflictObject(self._placed)
+
+        c.remove(max_piece)
+
+        min_danger = sys.maxint
         for i in xrange(self.__size):
-            danger = 0
             this_piece = (max_piece[0], i)
             if this_piece in self._placed:
                 continue
@@ -74,13 +79,13 @@ class RepairingBoard(Board):
             if this_piece == max_piece:
                 continue
 
-            dangers[this_piece] = 0
-            for other_piece in self._placed:
-                if self.check_pieces_in_danger(this_piece, other_piece):
-                    danger += 1
+            danger = c.get_danger(this_piece) + 1
 
             if DETECT_COLINEAR:
-                danger += self.check_colinearity(this_piece) * 2
+                if danger <= min_danger:
+                    danger += self.check_colinearity(this_piece) * 2
+
+            min_danger = min(danger, min_danger)
 
             dangers[this_piece] = danger
 

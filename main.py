@@ -1,5 +1,6 @@
 import sys
 from config import DETECT_COLINEAR
+import random
 SIZE=9
 SEED=0
 if len(sys.argv) > 1:
@@ -13,8 +14,9 @@ if len(sys.argv) > 2:
   SEED = sys.argv[2]
 
 def main():
-  import arrange
+  import arrange, repair
   arrange.SEED = SEED
+  repair.SEED = SEED
 
   from arrange import BruteForceBoard 
   from repair import RepairingBoard 
