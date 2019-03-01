@@ -1,10 +1,10 @@
 #include <unordered_map>
 #include <cmath>
 #include <algorithm>
+#include <ctime>
 
 #include <ext/pb_ds/assoc_container.hpp>
 using namespace __gnu_pbds;
-
 
 class ConflictCounter:
     int N
@@ -119,6 +119,38 @@ def board_is_good(auto &board):
 
     return true
 
+def add_conflicted(auto &board, px, py, auto &conflicted):
+    slopes.clear()
+
+    for i = 0; i < len(board); i++:
+        ix = i
+        iy = board[i]
+
+        if ix == px:
+            continue
+
+        if py == iy:
+            continue
+
+        slope = float(px - ix) / float(py - iy)
+
+        slopes[slope] += 1
+
+    for i = 0; i < len(board); i++:
+        ix = i
+        iy = board[i]
+
+        if ix == px:
+            continue
+
+        if py == iy:
+            conflicted[ix] = 1
+            conflicted[px] = 1
+            continue
+
+        slope = float(px - ix) / float(py - iy)
+        if slopes[slope] > 1:
+            conflicted[i] = 1
 inline bool update_position(auto &board, ConflictCounter &cc, int p):
     px = p
     py = board[p]
@@ -158,7 +190,7 @@ inline bool update_position(auto &board, ConflictCounter &cc, int p):
 
     if len(available) == 0:
         cc.add_piece(px, py)
-        return false
+        return true
 
     best_move = available[rand() % len(available)]
 
@@ -187,15 +219,26 @@ def solve(auto &board):
 
     ConflictCounter cc(board)
     random_shuffle(rand_order.begin(), rand_order.end())
-    for iter = 0; iter < 5000; iter++:
-        print "ITER", iter,
+    gp_hash_table<float, int> conflicted;
+    gp_hash_table<float, int> next_iter;
+    for i = 0; i < N; i++:
+        next_iter[i] = 1
+
+    for iter = 0; iter < 20000; iter++:
+        conflicted.clear()
+
+        print "ITER", iter, next_iter.size(),
         if DEBUG:
             print ""
         made_move = 0
-        for i = 0; i < N; i++:
-            p = rand_order[i]
+        for auto p : rand_order:
             if update_position(board, cc, p):
                 made_move++
+                conflicted[p] = 1
+
+            add_conflicted(board, p, board[p], conflicted)
+
+        next_iter = conflicted;
 
         print "MADE", made_move, "MOVES"
 
@@ -203,7 +246,21 @@ def solve(auto &board):
             if board_is_good(board):
                 break
 
+        if !made_move || iter % 50 == 0:
+            for i = 0; i < N; i++:
+                next_iter[i] = 1
+
+        rand_order.resize(next_iter.size())
+        i = 0
+        for auto p : next_iter:
+            rand_order[i] = p.first
+            i++
+        random_shuffle(rand_order.begin(), rand_order.end())
+
+
 def main(int argc, char **argv):
+    srand(time(NULL))
+
     N = 999
     vector<int> board(N);
 
