@@ -151,6 +151,7 @@ def add_conflicted(auto &board, px, py, auto &conflicted):
         slope = float(px - ix) / float(py - iy)
         if slopes[slope] > 1:
             conflicted[i] = 1
+
 inline bool update_position(auto &board, ConflictCounter &cc, int p):
     px = p
     py = board[p]
@@ -250,8 +251,8 @@ def solve(auto &board):
             for i = 0; i < N; i++:
                 next_iter[i] = 1
 
-        rand_order.resize(next_iter.size())
         i = 0
+        rand_order.resize(next_iter.size())
         for auto p : next_iter:
             rand_order[i] = p.first
             i++
