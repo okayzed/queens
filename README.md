@@ -3,6 +3,10 @@
 min-conflicts / iterative repair solution to solve N queens problem. everything
 is wired up inside main.py
 
+this solver can also generate solution for non-colinear n queens problem
+(change DETECT_COLINEAR in config.py), but is much much slower.  non-colinear
+means that no 3 queens can be in a straight line.
+
 
 ## solvers
 
@@ -10,10 +14,21 @@ is wired up inside main.py
 
 run with `pypy py/main.py 50` to generate n queens board of size 50
 
-### cpp solver
+without the co-linear constraint, a 999x999 solution can be generated in 5
+seconds.  it originally took up to 2 hours to solve for non co-linear queens,
+but now it takes 10 - 15 minutes to do 999x999 instead of 5 seconds.
 
-compile with `g++ -O3 okp/queens_repair.cpp -o qr` and run `qr`, changing N
+PS. the colinear solver is not guaranteed to generate a solution
+
+
+### okp / cpp solver
+
+compile with `g++ -O3 okp/queens_repair.cpp -o qr` and run `qr`. changing N
 requires re-compiling
+
+i re-wrote the python solution in okp with the goal of solving 999x999 in under
+5 minutes. it's now able to solve no co-linear queens for 999x999 in 2 - 5
+minutes, but it's not guaranteed to find a solution.
 
 ## notes
 
@@ -24,17 +39,6 @@ while board isn't valid:
     for queen on board:
         move queen to spot in her column that reduces conflicts the most
 ```
-
-### no-colinear queens
-
-solver can also generate solution for non-colinear n queens problem (change
-DETECT_COLINEAR in config.py), but is much much slower (takes 2 - 5 minutes to
-do 999x999 instead of 1 - 2 seconds). non-colinear means that no 3 queens can
-be in a straight line.
-
-PS. the colinear solver is not guaranteed to generate a solution, current success
-rate is ~80%
-
 
 ### optimizations
 
